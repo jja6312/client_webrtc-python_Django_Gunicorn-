@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Tier 애플리케이션 - 웹 서버</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message-list {
+            margin-top: 30px;
+        }
+        .message {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .message-content {
+            margin-bottom: 10px;
+        }
+        .message-time {
+            color: #777;
+            font-size: 0.8em;
+            text-align: right;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .status.success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .status.error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .server-info {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>3-Tier 애플리케이션</h1>
+        
+        <div class="form-group">
+            <label for="message-content">새 메시지 작성:</label>
+            <textarea id="message-content" placeholder="메시지를 입력하세요..."></textarea>
+        </div>
+        
+        <button id="send-button">메시지 전송</button>
+        
+        <div id="status-message" class="status" style="display: none;"></div>
+        
+        <div class="message-list" id="message-list">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="message">
+                    <div class="message-content">{{ message.content }}</div>
+                    <div class="message-time">{{ message.created_at|date:"Y-m-d H:i:s" }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>아직 메시지가 없습니다. 첫 메시지를 작성해보세요!</p>
+            {% endif %}
+        </div>
+        
+        <div class="server-info">
+            <p>웹 서버 (인스턴스 1) | Django 애플리케이션</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sendButton = document.getElementById('send-button');
+            const messageContent = document.getElementById('message-content');
+            const messageList = document.getElementById('message-list');
+            const statusMessage = document.getElementById('status-message');
+            
+            // 메시지 전송 함수
+            function sendMessage() {
+                const content = messageContent.value.trim();
+                
+                if (!content) {
+                    showStatus('메시지 내용을 입력해주세요.', 'error');
+                    return;
+                }
+                
+                fetch('/api/messages/create/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: content })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        messageContent.value = '';
+                        showStatus('메시지가 성공적으로 전송되었습니다.', 'success');
+                        loadMessages();
+                    } else {
+                        showStatus('오류: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('서버 통신 오류: ' + error.message, 'error');
+                });
+            }
+            
+            // 메시지 목록 로드 함수
+            function loadMessages() {
+                fetch('/api/messages/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        messageList.innerHTML = '';
+                        
+                        if (data.messages.length === 0) {
+                            messageList.innerHTML = '<p>아직 메시지가 없습니다. 첫 메시지를 작성해보세요!</p>';
+                            return;
+                        }
+                        
+                        data.messages.forEach(message => {
+                            const messageElement = document.createElement('div');
+                            messageElement.className = 'message';
+                            
+                            const contentElement = document.createElement('div');
+                            contentElement.className = 'message-content';
+                            contentElement.textContent = message.content;
+                            
+                            const timeElement = document.createElement('div');
+                            timeElement.className = 'message-time';
+                            timeElement.textContent = message.created_at;
+                            
+                            messageElement.appendChild(contentElement);
+                            messageElement.appendChild(timeElement);
+                            messageList.appendChild(messageElement);
+                        });
+                    } else {
+                        showStatus('메시지 로드 오류: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showStatus('서버 통신 오류: ' + error.message, 'error');
+                });
+            }
+            
+            // 상태 메시지 표시 함수
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status ' + type;
+                statusMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+            
+            // 이벤트 리스너 등록
+            sendButton.addEventListener('click', sendMessage);
+            
+            // 초기 메시지 로드
+            loadMessages();
+            
+            // 주기적으로 메시지 갱신
+            setInterval(loadMessages, 10000);
+        });
+    </script>
+</body>
+</html>
