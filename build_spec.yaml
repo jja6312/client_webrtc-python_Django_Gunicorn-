@@ -13,27 +13,27 @@ steps:
   - type: Command
     name: "Install dependencies"
     command: |
-      echo "[Start] Install dependencies"
+      echo "[Start] Install deps on OL7]"
 
-      yum install -y \
-        python3 python3-pip python3-devel gcc \
-        mysql-devel mysql-community-devel \
-        pkgconfig libffi-devel openssl-devel make || {
-          echo "[Error] yum install failed"
-          exit 1
-        }
+      # 1) MySQL Community 리포 등록
+      yum install -y https://repo.mysql.com/mysql80-community-release-el7.rpm
 
-      if ! command -v mysql_config &> /dev/null; then
-        echo "[Error] mysql_config not found. Check if mysql-community-devel is installed."
-        exit 1
-      fi
+      # 2) Python 3.10 & 컴파일 도구
+      yum install -y python310 python310-devel gcc make \
+                     mysql-community-devel \
+                     pkgconfig libffi-devel openssl-devel
 
-      pip3 install django mysqlclient python-dotenv gunicorn || {
-        echo "[Error] pip install failed"
-        exit 1
-      }
+      alternatives --set python3 /usr/bin/python3.10
+      python3 --version
 
-      echo "[Success] Install dependencies"
+      # 3) mysql_config 존재 확인
+      which mysql_config || { echo "[ERROR] mysql_config missing"; exit 1; }
+
+      # 4) 파이썬 패키지
+      pip3 install --upgrade pip
+      pip3 install django mysqlclient python-dotenv gunicorn
+
+      echo "[SUCCESS] Dependencies installed"
 
   - type: Command
     name: "Run tests"
