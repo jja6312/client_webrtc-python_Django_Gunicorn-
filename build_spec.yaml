@@ -12,25 +12,28 @@ env:
 steps:
   - type: Command
     name: "Install dependencies"
-    command: |
-      echo "[Start] Install dependencies"
-      yum install -y epel-release
-      yum install -y \
-        python3 python3-pip python3-devel gcc \
-        mysql-devel mysql-community-devel \
-        pkgconfig libffi-devel openssl-devel make
-
-      if ! command -v mysql_config &> /dev/null; then
-        echo "[Error] mysql_config not found. Check if mysql-community-devel is properly installed."
-        exit 1
-      fi
-
-      pip3 install django mysqlclient python-dotenv gunicorn || {
-        echo "[Error] pip install failed"
+  command: |
+    echo "[Start] Install dependencies"
+    
+    yum install -y \
+      python3 python3-pip python3-devel gcc \
+      mysql-devel mysql-community-devel \
+      pkgconfig libffi-devel openssl-devel make || {
+        echo "[Error] yum install failed"
         exit 1
       }
 
-      echo "[Success] Install dependencies"
+    if ! command -v mysql_config &> /dev/null; then
+      echo "[Error] mysql_config not found. Check if mysql-community-devel is installed."
+      exit 1
+    fi
+
+    pip3 install django mysqlclient python-dotenv gunicorn || {
+      echo "[Error] pip install failed"
+      exit 1
+    }
+
+    echo "[Success] Install dependencies"
 
   - type: Command
     name: "Run tests"
