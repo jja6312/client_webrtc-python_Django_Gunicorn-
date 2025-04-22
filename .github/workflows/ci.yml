@@ -15,14 +15,17 @@ jobs:
       PYTHON_VERSION: 3.10
 
     steps:
+    # 1. 소스 체크아웃
     - name: Checkout code
       uses: actions/checkout@v3
 
+    # 2. 파이썬 설정
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
+    # 3. OS‑레벨 패키지
     - name: Install OS dependencies
       run: |
         sudo apt-get update
@@ -30,38 +33,44 @@ jobs:
           python3-dev default-libmysqlclient-dev \
           build-essential pkg-config libffi-dev libssl-dev
 
+    # 4. 파이썬 의존성
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install django mysqlclient python-dotenv gunicorn
 
+    # 5. 테스트
     - name: Run Tests
       run: |
         cd web_app
         python manage.py test
 
+    # 6. 정적 파일 수집
     - name: Collect Static Files
       run: |
         cd web_app
         python manage.py collectstatic --noinput
 
+    # 7. 패키징
     - name: Package app
       run: |
         tar -czvf django-app.tar.gz web_app/
 
+    # 8. GitHub 아티팩트(업로드‑artifact v4 사용)
     - name: Upload artifact to GitHub
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: django-app
         path: django-app.tar.gz
 
+    # 9. OCI Object Storage 업로드
     - name: Upload to OCI Object Storage
       env:
         OCI_CLI_AUTH: api_key
         OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
-        OCI_USER_OCID: ${{ secrets.OCI_USER_OCID }}
+        OCI_USER_OCID:   ${{ secrets.OCI_USER_OCID }}
         OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-        OCI_REGION: ${{ secrets.OCI_REGION }}
+        OCI_REGION:      ${{ secrets.OCI_REGION }}
         OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
         OCI_BUCKET_NAME: ${{ secrets.OCI_BUCKET_NAME }}
       run: |
@@ -72,14 +81,10 @@ jobs:
         printf "[DEFAULT]\nuser=%s\nfingerprint=%s\nkey_file=oci_api_key.pem\ntenancy=%s\nregion=%s\n" \
           "$OCI_USER_OCID" "$OCI_FINGERPRINT" "$OCI_TENANCY_OCID" "$OCI_REGION" > ~/.oci/config
 
+        curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh \
+          | bash -s -- --accept-all-defaults
+        export PATH="$HOME/bin:$PATH"
 
-        # CLI 설치
-        curl -L https://raw.githubusercontent.com/oracle/oci-cli/master/scripts/install/install.sh | bash -s -- --accept-all-defaults
-
-        # CLI 경로 설정
-        export PATH=$HOME/bin:$PATH
-
-        # 업로드
         oci os object put \
           --bucket-name "$OCI_BUCKET_NAME" \
           --name django-app.tar.gz \
