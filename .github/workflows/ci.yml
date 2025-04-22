@@ -12,7 +12,7 @@ jobs:
 
     env:
       APP_NAME: django-app
-      PYTHON_VERSION: 3.10
+      PYTHON_VERSION: "3.10"
 
     steps:
     # 1. 소스 체크아웃
