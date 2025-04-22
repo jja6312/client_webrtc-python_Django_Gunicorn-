@@ -50,11 +50,10 @@ jobs:
         tar -czvf django-app.tar.gz web_app/
 
     - name: Upload artifact to GitHub
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v3
       with:
         name: django-app
         path: django-app.tar.gz
-
 
     - name: Upload to OCI Object Storage
       env:
