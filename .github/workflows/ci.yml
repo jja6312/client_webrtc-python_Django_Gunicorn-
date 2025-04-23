@@ -84,7 +84,7 @@ jobs:
           | bash -s -- --accept-all-defaults
         export PATH="$HOME/bin:$PATH"
 
-        oci artifacts generic artifact upload \
+        oci artifacts generic artifact upload-by-path \
           --repository-name "$OCI_ARTIFACTS_REPOSITORY" \
           --artifact-path django-app.tar.gz \
           --artifact-display-name django-app.tar.gz \
