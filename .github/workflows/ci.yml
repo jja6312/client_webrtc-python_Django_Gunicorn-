@@ -63,16 +63,15 @@ jobs:
         name: django-app
         path: django-app.tar.gz
 
-    # 9. OCI Object Storage 업로드
-    - name: Upload to OCI Object Storage
+    # 9. OCI Artifact Registry 업로드 (2025 권장 방식)
+    - name: Upload to OCI Artifact Registry
       env:
-        OCI_CLI_AUTH: api_key
-        OCI_TENANCY_OCID: ${{ secrets.OCI_TENANCY_OCID }}
-        OCI_USER_OCID:   ${{ secrets.OCI_USER_OCID }}
-        OCI_FINGERPRINT: ${{ secrets.OCI_FINGERPRINT }}
-        OCI_REGION:      ${{ secrets.OCI_REGION }}
-        OCI_PRIVATE_KEY: ${{ secrets.OCI_PRIVATE_KEY }}
-        OCI_BUCKET_NAME: ${{ secrets.OCI_BUCKET_NAME }}
+        OCI_TENANCY_OCID:   ${{ secrets.OCI_TENANCY_OCID }}
+        OCI_USER_OCID:      ${{ secrets.OCI_USER_OCID }}
+        OCI_FINGERPRINT:    ${{ secrets.OCI_FINGERPRINT }}
+        OCI_REGION:         ${{ secrets.OCI_REGION }}
+        OCI_PRIVATE_KEY:    ${{ secrets.OCI_PRIVATE_KEY }}
+        OCI_ARTIFACTS_REPOSITORY: ${{ secrets.OCI_ARTIFACTS_REPOSITORY }}
       run: |
         echo "$OCI_PRIVATE_KEY" > oci_api_key.pem
         chmod 600 oci_api_key.pem
@@ -85,8 +84,9 @@ jobs:
           | bash -s -- --accept-all-defaults
         export PATH="$HOME/bin:$PATH"
 
-        oci os object put \
-          --bucket-name "$OCI_BUCKET_NAME" \
-          --name django-app.tar.gz \
-          --file django-app.tar.gz \
-          --force
+        oci artifacts generic-artifact upload \
+          --repository-name "$OCI_ARTIFACTS_REPOSITORY" \
+          --artifact-path django-app.tar.gz \
+          --artifact-display-name django-app.tar.gz \
+          --content-type application/gzip
+
