@@ -87,4 +87,5 @@ jobs:
         oci artifacts generic artifact upload-by-path \
           --repository-id "$OCI_ARTIFACTS_REPOSITORY_ID" \
           --artifact-path django-app.tar.gz \
-
+          --artifact-version "v$(date +%Y%m%d%H%M%S)" \
+          --content-body "Uploaded by GitHub Actions"
