@@ -56,14 +56,14 @@ jobs:
       run: |
         tar -czvf django-app.tar.gz web_app/
 
-    # 8. GitHub 아티팩트(업로드‑artifact v4 사용)
+    # 8. GitHub 아티팩트
     - name: Upload artifact to GitHub
       uses: actions/upload-artifact@v4
       with:
         name: django-app
         path: django-app.tar.gz
 
-    # 9. OCI Artifact Registry 업로드 (2025 권장 방식)
+    # 9. OCI Artifact Registry 업로드
     - name: Upload to OCI Artifact Registry
       env:
         OCI_TENANCY_OCID:   ${{ secrets.OCI_TENANCY_OCID }}
