@@ -87,5 +87,4 @@ jobs:
         oci artifacts generic artifact upload-by-path \
           --repository-id "$OCI_ARTIFACTS_REPOSITORY_ID" \
           --artifact-path django-app.tar.gz \
-          --content-type application/gzip
 
